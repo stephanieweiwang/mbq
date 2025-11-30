@@ -104,8 +104,10 @@
 <body>
     <div class="button-group no-print">
         <button onclick="window.print()">📄 Print / Save as PDF</button>
-        <button onclick="document.getElementById('sampleData').value='test'; fillForm()">📝 Fill with Sample Data</button>
-        <button onclick="clearAllFields()">🗑️ Clear Form</button>
+        <button onclick="fillForm()">📝 Fill with Sample Data</button>
+        <button onclick="saveAnswers()">💾 Save Answers</button>
+        <button onclick="loadAnswers()">📂 Load Saved Answers</button>
+        <button onclick="doClear()">🗑️ Clear Form</button>
     </div>
     <input type="hidden" id="sampleData">
 
@@ -300,28 +302,140 @@
             document.getElementById('hatOther').value = 'Cheesehead';
         }
         
-        function clearAllFields() {
-            var result = window.confirm('Clear all form data?');
-            if (result === true) {
-                var inputs = document.getElementsByTagName('input');
-                for (var i = 0; i < inputs.length; i++) {
-                    if (inputs[i].type === 'text') {
-                        inputs[i].value = '';
-                    } else if (inputs[i].type === 'checkbox' || inputs[i].type === 'radio') {
-                        inputs[i].checked = false;
-                    }
+        function saveAnswers() {
+            var data = {
+                name: document.getElementById('name').value,
+                fragrance: document.getElementById('fragrance').value,
+                architectOther: document.getElementById('architectOther').value,
+                neighborhood: document.getElementById('neighborhood').value,
+                restaurant: document.getElementById('restaurant').value,
+                food: document.getElementById('food').value,
+                drink: document.getElementById('drink').value,
+                composer: document.getElementById('composer').value,
+                rank1: document.getElementById('rank1').value,
+                rank2: document.getElementById('rank2').value,
+                rank3: document.getElementById('rank3').value,
+                rank4: document.getElementById('rank4').value,
+                rank5: document.getElementById('rank5').value,
+                rank6: document.getElementById('rank6').value,
+                rank7: document.getElementById('rank7').value,
+                age5: document.getElementById('age5').value,
+                age15: document.getElementById('age15').value,
+                age21: document.getElementById('age21').value,
+                age89: document.getElementById('age89').value,
+                tvseries: document.getElementById('tvseries').value,
+                sentence: document.getElementById('sentence').value,
+                hatOther: document.getElementById('hatOther').value,
+                flowersCanvas: document.getElementById('flowersCanvas').toDataURL(),
+                spaceshipCanvas: document.getElementById('spaceshipCanvas').toDataURL(),
+                checkboxes: [],
+                radios: {}
+            };
+            
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            for (var i = 0; i < checkboxes.length; i++) {
+                if (checkboxes[i].checked) {
+                    data.checkboxes.push(checkboxes[i].parentElement.textContent.trim());
                 }
-                var textareas = document.getElementsByTagName('textarea');
-                for (var j = 0; j < textareas.length; j++) {
-                    textareas[j].value = '';
+            }
+            
+            var radioGroups = ['architect', 'hat', 'comedy'];
+            for (var j = 0; j < radioGroups.length; j++) {
+                var selected = document.querySelector('input[name="' + radioGroups[j] + '"]:checked');
+                if (selected) {
+                    data.radios[radioGroups[j]] = selected.parentElement.textContent.trim();
+                }
+            }
+            
+            window.storage.set('mel-brooks-questionnaire', JSON.stringify(data)).then(function() {
+                alert('✅ Answers saved successfully!');
+            }).catch(function(err) {
+                alert('❌ Error saving: ' + err.message);
+            });
+        }
+        
+        function loadAnswers() {
+            window.storage.get('mel-brooks-questionnaire').then(function(result) {
+                if (!result || !result.value) {
+                    alert('No saved answers found.');
+                    return;
                 }
                 
-                var canvases = document.getElementsByTagName('canvas');
-                for (var k = 0; k < canvases.length; k++) {
-                    var ctx = canvases[k].getContext('2d');
-                    ctx.fillStyle = 'white';
-                    ctx.fillRect(0, 0, canvases[k].width, canvases[k].height);
+                var data = JSON.parse(result.value);
+                
+                document.getElementById('name').value = data.name || '';
+                document.getElementById('fragrance').value = data.fragrance || '';
+                document.getElementById('architectOther').value = data.architectOther || '';
+                document.getElementById('neighborhood').value = data.neighborhood || '';
+                document.getElementById('restaurant').value = data.restaurant || '';
+                document.getElementById('food').value = data.food || '';
+                document.getElementById('drink').value = data.drink || '';
+                document.getElementById('composer').value = data.composer || '';
+                document.getElementById('rank1').value = data.rank1 || '';
+                document.getElementById('rank2').value = data.rank2 || '';
+                document.getElementById('rank3').value = data.rank3 || '';
+                document.getElementById('rank4').value = data.rank4 || '';
+                document.getElementById('rank5').value = data.rank5 || '';
+                document.getElementById('rank6').value = data.rank6 || '';
+                document.getElementById('rank7').value = data.rank7 || '';
+                document.getElementById('age5').value = data.age5 || '';
+                document.getElementById('age15').value = data.age15 || '';
+                document.getElementById('age21').value = data.age21 || '';
+                document.getElementById('age89').value = data.age89 || '';
+                document.getElementById('tvseries').value = data.tvseries || '';
+                document.getElementById('sentence').value = data.sentence || '';
+                document.getElementById('hatOther').value = data.hatOther || '';
+                
+                if (data.flowersCanvas) {
+                    var img1 = new Image();
+                    img1.onload = function() {
+                        var ctx = document.getElementById('flowersCanvas').getContext('2d');
+                        ctx.drawImage(img1, 0, 0);
+                    };
+                    img1.src = data.flowersCanvas;
                 }
+                
+                if (data.spaceshipCanvas) {
+                    var img2 = new Image();
+                    img2.onload = function() {
+                        var ctx = document.getElementById('spaceshipCanvas').getContext('2d');
+                        ctx.drawImage(img2, 0, 0);
+                    };
+                    img2.src = data.spaceshipCanvas;
+                }
+                
+                alert('✅ Answers loaded successfully!');
+            }).catch(function(err) {
+                alert('No saved answers found.');
+            });
+        }
+        
+        function doClear() {
+            var result = window.confirm('Clear all form data?');
+            if (result) {
+                clearAllFields();
+            }
+        }
+        
+        function clearAllFields() {
+            var inputs = document.getElementsByTagName('input');
+            for (var i = 0; i < inputs.length; i++) {
+                if (inputs[i].type === 'text') {
+                    inputs[i].value = '';
+                } else if (inputs[i].type === 'checkbox' || inputs[i].type === 'radio') {
+                    inputs[i].checked = false;
+                }
+            }
+            var textareas = document.getElementsByTagName('textarea');
+            for (var j = 0; j < textareas.length; j++) {
+                textareas[j].value = '';
+            }
+            
+            var canvases = document.getElementsByTagName('canvas');
+            for (var k = 0; k < canvases.length; k++) {
+                var ctx = canvases[k].getContext('2d');
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvases[k].width, canvases[k].height);
             }
         }
         
